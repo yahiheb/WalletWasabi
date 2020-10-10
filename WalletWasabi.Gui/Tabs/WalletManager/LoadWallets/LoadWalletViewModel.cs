@@ -30,7 +30,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 	{
 		private ReadOnlyObservableCollection<WalletViewModelBase> _wallets;
 		private string _password;
-		private WalletViewModelBase _selectedWallet;
+		private WalletViewModelBase? _selectedWallet;
 
 		private bool _disposedValue = false; // To detect redundant calls
 
@@ -40,7 +40,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 			Global = Locator.Current.GetService<Global>();
 
 			Owner = owner;
-			Password = "";
+			_password = "";
 			LoadWalletType = loadWalletType;
 
 			this.ValidateProperty(x => x.Password, ValidatePassword);
@@ -114,7 +114,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 			set => this.RaiseAndSetIfChanged(ref _password, value);
 		}
 
-		public WalletViewModelBase SelectedWallet
+		public WalletViewModelBase? SelectedWallet
 		{
 			get => _selectedWallet;
 			set => this.RaiseAndSetIfChanged(ref _selectedWallet, value);
@@ -122,7 +122,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 
 		public SourceList<WalletViewModelBase> RootList { get; private set; }
 		public ReactiveCommand<Unit, IDisposable> LoadCommand { get; }
-		public ReactiveCommand<Unit, KeyManager> TestPasswordCommand { get; }
+		public ReactiveCommand<Unit, KeyManager?> TestPasswordCommand { get; }
 		public ReactiveCommand<Unit, Unit> OpenFolderCommand { get; }
 		private WalletManagerViewModel Owner { get; }
 
@@ -138,7 +138,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 			Password = "";
 		}
 
-		public KeyManager LoadKeyManager()
+		private KeyManager? LoadKeyManager()
 		{
 			try
 			{
@@ -159,7 +159,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 				// Only check requirepassword here, because the above checks are applicable to loadwallet, too and we are using this function from load wallet.
 				if (IsPasswordRequired)
 				{
-					if (PasswordHelper.TryPassword(keyManager, password, out string compatibilityPasswordUsed))
+					if (PasswordHelper.TryPassword(keyManager, password, out string? compatibilityPasswordUsed))
 					{
 						NotificationHelpers.Success("Correct password.");
 						if (compatibilityPasswordUsed is { })
@@ -196,7 +196,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 			}
 		}
 
-		public async Task LoadWalletAsync()
+		private async Task LoadWalletAsync()
 		{
 			var keyManager = LoadKeyManager();
 			if (keyManager is null)
@@ -228,7 +228,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.LoadWallets
 			SelectWallet(keyman);
 		}
 
-		public void SelectWallet(KeyManager keymanager)
+		public void SelectWallet(KeyManager? keymanager)
 		{
 			var wallet = Wallets.FirstOrDefault(w => w.Wallet.KeyManager == keymanager);
 			SelectedWallet = wallet;

@@ -9,6 +9,7 @@ using ReactiveUI;
 using Splat;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -32,10 +33,10 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 	public class ConnectHardwareWalletViewModel : CategoryViewModel
 	{
 		private ObservableCollection<HardwareWalletViewModel> _wallets;
-		private HardwareWalletViewModel _selectedWallet;
+		private HardwareWalletViewModel? _selectedWallet;
 		private bool _isBusy;
 		private bool _isHardwareBusy;
-		private string _loadButtonText;
+		private string _loadButtonText = "";
 		private bool _isHwWalletSearchTextVisible;
 
 		public ConnectHardwareWalletViewModel(WalletManagerViewModel owner) : base("Hardware Wallet")
@@ -43,7 +44,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 			Global = Locator.Current.GetService<Global>();
 			WalletManager = Global.WalletManager;
 			Owner = owner;
-			Wallets = new ObservableCollection<HardwareWalletViewModel>();
+			_wallets = new ObservableCollection<HardwareWalletViewModel>();
 			IsHwWalletSearchTextVisible = false;
 
 			this.WhenAnyValue(x => x.SelectedWallet)
@@ -85,7 +86,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 					ofd.Directory = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
 				}
 
-				var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime).MainWindow;
+				var window = (Application.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 				var selected = await ofd.ShowAsync(window, fallBack: true);
 				if (selected is { } && selected.Any())
 				{
@@ -155,7 +156,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 			set => this.RaiseAndSetIfChanged(ref _wallets, value);
 		}
 
-		public HardwareWalletViewModel SelectedWallet
+		public HardwareWalletViewModel? SelectedWallet
 		{
 			get => _selectedWallet;
 			set => this.RaiseAndSetIfChanged(ref _selectedWallet, value);
@@ -222,7 +223,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 			LoadButtonText = text;
 		}
 
-		public async Task<KeyManager> LoadKeyManagerAsync()
+		private async Task<KeyManager?> LoadKeyManagerAsync()
 		{
 			try
 			{
@@ -318,13 +319,13 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 					MainWindowViewModel.Instance.StatusBar.TryRemoveStatus(StatusType.AcquiringXpubFromHardwareWallet);
 				}
 
-				if (TryFindWalletByExtPubKey(extPubKey, out string wn))
+				if (TryFindWalletByExtPubKey(extPubKey, out string? wn))
 				{
 					walletName = wn.TrimEnd(".json", StringComparison.OrdinalIgnoreCase);
 				}
 				else
 				{
-					var prefix = selectedWallet.HardwareWalletInfo?.Model.FriendlyName() ?? HardwareWalletModels.Unknown.FriendlyName();
+					var prefix = selectedWallet.HardwareWalletInfo.Model.FriendlyName() ?? HardwareWalletModels.Unknown.FriendlyName();
 					walletName = WalletManager.WalletDirectories.GetNextWalletName(prefix);
 					Logger.LogInfo($"Hardware wallet was not used previously on this computer. New wallet '{walletName}' was created.");
 
@@ -370,7 +371,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 			}
 		}
 
-		public async Task LoadWalletAsync()
+		private async Task LoadWalletAsync()
 		{
 			try
 			{
@@ -426,7 +427,7 @@ namespace WalletWasabi.Gui.Tabs.WalletManager.HardwareWallets
 			}
 		}
 
-		private bool TryFindWalletByExtPubKey(ExtPubKey extPubKey, out string walletName)
+		private bool TryFindWalletByExtPubKey(ExtPubKey extPubKey, [NotNullWhen(true)] out string? walletName)
 		{
 			walletName = WalletManager.WalletDirectories
 				.EnumerateWalletFiles(includeBackupDir: false)

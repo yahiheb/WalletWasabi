@@ -15,8 +15,8 @@ namespace WalletWasabi.Gui.Controls.TransactionDetails.ViewModels
 		private string _label;
 		private int _blockHeight;
 		private string _transactionId;
-		private Money _totalInputValue;
-		private Money _totalOutputValue;
+		private Money? _totalInputValue;
+		private Money? _totalOutputValue;
 		private int _inputCount;
 		private int _outputCount;
 		private string _walletName;
@@ -65,13 +65,13 @@ namespace WalletWasabi.Gui.Controls.TransactionDetails.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _transactionId, value);
 		}
 
-		public Money TotalInputValue
+		public Money? TotalInputValue
 		{
 			get => _totalInputValue;
 			set => this.RaiseAndSetIfChanged(ref _totalInputValue, value);
 		}
 
-		public Money TotalOutputValue
+		public Money? TotalOutputValue
 		{
 			get => _totalOutputValue;
 			set => this.RaiseAndSetIfChanged(ref _totalOutputValue, value);
@@ -89,7 +89,7 @@ namespace WalletWasabi.Gui.Controls.TransactionDetails.ViewModels
 			set => this.RaiseAndSetIfChanged(ref _outputCount, value);
 		}
 
-		public Money NetworkFee => TotalInputValue is null || TotalOutputValue is null
+		public Money? NetworkFee => TotalInputValue is null || TotalOutputValue is null
 			? null
 			: TotalInputValue - TotalOutputValue;
 
