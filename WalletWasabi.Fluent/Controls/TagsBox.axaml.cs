@@ -274,13 +274,15 @@ public class TagsBox : TemplatedControl
 	{
 		var correctedInput = CurrentText.ParseLabel();
 
-		if (RestrictInputToSuggestions && Suggestions is { } suggestions)
+		if (RestrictInputToSuggestions)
 		{
-			IsCurrentTextValid = suggestions.Any(x => x.Equals(correctedInput, _stringComparison));
-			return;
+			if (Suggestions is { } suggestions)
+			{
+				IsCurrentTextValid = suggestions.Any(x => x.Equals(correctedInput, _stringComparison));
+				return;
+			}
 		}
-
-		if (!RestrictInputToSuggestions)
+		else
 		{
 			IsCurrentTextValid = !string.IsNullOrEmpty(correctedInput);
 			return;
