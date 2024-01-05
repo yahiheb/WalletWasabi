@@ -7,7 +7,7 @@ namespace WalletWasabi.Blockchain.BlockFilters;
 /// <summary>
 /// Class for creating Golomb-Rice filters for a given block.
 /// It provides methods for building two kind of filters out-of-the-box:
-/// Basic Filters and Extenden Filters.
+/// Basic Filters and Extended Filters.
 /// </summary>
 public class Bip158GolombRiceFilterBuilder
 {
@@ -96,7 +96,7 @@ public class Bip158GolombRiceFilterBuilder
 	}
 
 	/// <summary>
-	/// Creates a new Golob-Rice filter builder.
+	/// Creates a new Golomb-Rice filter builder.
 	/// </summary>
 	public Bip158GolombRiceFilterBuilder()
 	{
@@ -145,7 +145,7 @@ public class Bip158GolombRiceFilterBuilder
 	}
 
 	/// <summary>
-	/// Adds a transacion id to the list of elements that will be used for building the filter.
+	/// Adds a transaction id to the list of elements that will be used for building the filter.
 	/// </summary>
 	/// <param name="id">The transaction id.</param>
 	/// <returns>The updated filter builder instance.</returns>

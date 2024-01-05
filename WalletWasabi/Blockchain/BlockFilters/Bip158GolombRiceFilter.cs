@@ -108,7 +108,7 @@ public class Bip158GolombRiceFilter
 	/// Computes the sorted-and-uncompressed list of values to be included in the filter.
 	/// /// </summary>
 	/// <param name="P">P value used.</param>
-	/// <param name="key">Key used for hashing the datalements.</param>
+	/// <param name="key">Key used for hashing the data elements.</param>
 	/// <param name="data">Data elements to be computed in the list.</param>
 	/// <returns></returns>
 	internal static ulong[] ConstructHashedSet(byte p, int n, uint m, byte[] key, IEnumerable<byte[]> data, int dataCount)
