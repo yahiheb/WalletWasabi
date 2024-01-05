@@ -95,13 +95,13 @@ public class Bip158GolombRiceFilter
 	/// <param name="m">The M value to use.</param>
 	internal Bip158GolombRiceFilter(byte[] data, int n, byte p, uint m)
 	{
-		this.P = p;
-		this.N = n;
-		this.M = m;
+		P = p;
+		N = n;
+		M = m;
 
-		this.ModulusP = 1UL << P;
-		this.ModulusNP = (ulong)N * M;
-		this.Data = data;
+		ModulusP = 1UL << P;
+		ModulusNP = (ulong)N * M;
+		Data = data;
 	}
 
 	/// <summary>
@@ -111,16 +111,16 @@ public class Bip158GolombRiceFilter
 	/// <param name="key">Key used for hashing the datalements.</param>
 	/// <param name="data">Data elements to be computed in the list.</param>
 	/// <returns></returns>
-	internal static ulong[] ConstructHashedSet(byte P, int n, uint m, byte[] key, IEnumerable<byte[]> data, int dataCount)
+	internal static ulong[] ConstructHashedSet(byte p, int n, uint m, byte[] key, IEnumerable<byte[]> data, int dataCount)
 	{
 		// N the number of items to be inserted into the set.
 		// The list of data item hashes.
 		var values = new ulong[dataCount];
 		var valuesIndex = 0;
-		var modP = 1UL << P;
+		var modP = 1UL << p;
 		var modNP = ((ulong)n) * m;
 		var nphi = modNP >> 32;
-		var nplo = (ulong)((uint)modNP);
+		var nplo = (ulong)(uint)modNP;
 
 		var k0 = BitConverter.ToUInt64(key, 0);
 		var k1 = BitConverter.ToUInt64(key, 8);
@@ -146,7 +146,7 @@ public class Bip158GolombRiceFilter
 	{
 		var curFilterHashBytes = Hashes.DoubleSHA256(ToBytes()).ToBytes();
 		var prvFilterHashBytes = previousHeader.ToBytes();
-		return Hashes.DoubleSHA256(curFilterHashBytes.Concat(prvFilterHashBytes));
+		return Hashes.DoubleSHA256((byte[])curFilterHashBytes.Concat(prvFilterHashBytes));
 	}
 
 	/// <summary>
@@ -170,8 +170,8 @@ public class Bip158GolombRiceFilter
 	/// <returns>true if the element is in the filter, otherwise false.</returns>
 	public bool Match(byte[] data, byte[] key, GRCodedStreamReader reader)
 	{
-		if (data == null)
-			throw new ArgumentNullException(nameof(data));
+		ArgumentNullException.ThrowIfNull(data);
+
 		return MatchAny(new[] { data }, 1, key, reader);
 	}
 
@@ -208,8 +208,8 @@ public class Bip158GolombRiceFilter
 	/// <returns>true if at least one of the elements is in the filter, otherwise false.</returns>
 	public bool MatchAny(IEnumerable<byte[]> data, byte[] key, GRCodedStreamReader reader)
 	{
-		if (data == null)
-			throw new ArgumentNullException(nameof(data));
+		ArgumentNullException.ThrowIfNull(data);
+
 		if (data is byte[][] dataArray)
 		{
 			return MatchAny(dataArray, dataArray.Length, key, reader);
@@ -245,9 +245,11 @@ public class Bip158GolombRiceFilter
 	private bool InternalMatchAny(IEnumerable<byte[]> data, int dataCount, byte[] key, GRCodedStreamReader sr)
 	{
 		if (data == null || dataCount == 0)
+		{
 			throw new ArgumentException("data can not be null or empty array.", nameof(data));
-		if (key == null)
-			throw new ArgumentNullException(nameof(key));
+		}
+
+		ArgumentNullException.ThrowIfNull(key);
 
 		var hs = ConstructHashedSet(P, N, M, key, data, dataCount);
 
@@ -257,13 +259,19 @@ public class Bip158GolombRiceFilter
 			while (true)
 			{
 				if (dataIndex == dataCount)
+				{
 					return false;
+				}
 
 				if (hs[dataIndex] == val)
+				{
 					return true;
+				}
 
 				if (hs[dataIndex] > val)
+				{
 					break;
+				}
 
 				dataIndex++;
 			}
@@ -279,7 +287,7 @@ public class Bip158GolombRiceFilter
 	public byte[] ToBytes()
 	{
 		var n = new VarInt((ulong)N).ToBytes();
-		return n.Concat(this.Data);
+		return (byte[])n.Concat(Data);
 	}
 
 	/// <summary>
@@ -304,7 +312,7 @@ public class Bip158GolombRiceFilter
 	{
 		// First, we'll spit the item we need to reduce into its higher and lower bits.
 		var vhi = value >> 32;
-		var vlo = (ulong)((uint)value);
+		var vlo = (ulong)(uint)value;
 
 		// Then, we distribute multiplication over each part.
 		var vnphi = vhi * nhi;
@@ -313,8 +321,7 @@ public class Bip158GolombRiceFilter
 		var vnplo = vlo * nlo;
 
 		// We calculate the carry bit.
-		var carry = ((ulong)((uint)vnpmid) + (ulong)((uint)npvmid) +
-		(vnplo >> 32)) >> 32;
+		var carry = ((uint)vnpmid + (ulong)(uint)npvmid + (vnplo >> 32)) >> 32;
 
 		// Last, we add the high bits, the middle bits, and the carry.
 		value = vnphi + (vnpmid >> 32) + (npvmid >> 32) + carry;

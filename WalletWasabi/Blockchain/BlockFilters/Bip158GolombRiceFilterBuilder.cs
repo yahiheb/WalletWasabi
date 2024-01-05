@@ -22,7 +22,7 @@ public class Bip158GolombRiceFilterBuilder
 	/// </summary>
 	private class ByteArrayComparer : IEqualityComparer<byte[]>
 	{
-		public static readonly ByteArrayComparer Instance = new ByteArrayComparer();
+		public static readonly ByteArrayComparer Instance = new();
 
 		private ByteArrayComparer()
 		{
@@ -31,10 +31,18 @@ public class Bip158GolombRiceFilterBuilder
 		public bool Equals(byte[] a, byte[] b)
 		{
 			if (a.Length != b.Length)
+			{
 				return false;
+			}
+
 			for (int i = 0; i < a.Length; i++)
+			{
 				if (a[i] != b[i])
+				{
 					return false;
+				}
+			}
+
 			return true;
 		}
 
@@ -42,7 +50,10 @@ public class Bip158GolombRiceFilterBuilder
 		{
 			uint b = 0;
 			for (int i = 0; i < a.Length; i++)
+			{
 				b = ((b << 23) | (b >> 9)) ^ a[i];
+			}
+
 			return unchecked((int)b);
 		}
 	}
@@ -100,8 +111,7 @@ public class Bip158GolombRiceFilterBuilder
 	/// <returns>The updated filter builder instance</returns>
 	public Bip158GolombRiceFilterBuilder SetKey(uint256 blockHash)
 	{
-		if (blockHash == null)
-			throw new ArgumentNullException(nameof(blockHash));
+		ArgumentNullException.ThrowIfNull(blockHash);
 
 		_key = blockHash.ToBytes().SafeSubarray(0, 16);
 		return this;
@@ -115,7 +125,9 @@ public class Bip158GolombRiceFilterBuilder
 	public Bip158GolombRiceFilterBuilder SetP(int p)
 	{
 		if (p <= 0 || p > 32)
+		{
 			throw new ArgumentOutOfRangeException(nameof(p), "value has to be greater than zero and less or equal to 32.");
+		}
 
 		_p = (byte)p;
 		return this;
@@ -139,8 +151,7 @@ public class Bip158GolombRiceFilterBuilder
 	/// <returns>The updated filter builder instance.</returns>
 	public Bip158GolombRiceFilterBuilder AddTxId(uint256 id)
 	{
-		if (id == null)
-			throw new ArgumentNullException(nameof(id));
+		ArgumentNullException.ThrowIfNull(id);
 
 		_values.Add(id.ToBytes());
 		return this;
@@ -153,8 +164,7 @@ public class Bip158GolombRiceFilterBuilder
 	/// <returns>The updated filter builder instance.</returns>
 	public Bip158GolombRiceFilterBuilder AddScriptPubkey(Script scriptPubkey)
 	{
-		if (scriptPubkey == null)
-			throw new ArgumentNullException(nameof(scriptPubkey));
+		ArgumentNullException.ThrowIfNull(scriptPubkey);
 
 		// Unsafe is OK because Script is readonly and we do not modify the arrays inside values
 		_values.Add(scriptPubkey.ToBytes(true));
@@ -168,22 +178,25 @@ public class Bip158GolombRiceFilterBuilder
 	/// <returns>The updated filter builder instance.</returns>
 	public Bip158GolombRiceFilterBuilder AddScriptSig(Script scriptSig)
 	{
-		if (scriptSig == null)
-			throw new ArgumentNullException(nameof(scriptSig));
+		ArgumentNullException.ThrowIfNull(scriptSig);
 
 		var data = new List<byte[]>();
 		foreach (var op in scriptSig.ToOps())
 		{
 			if (op.PushData != null)
+			{
 				data.Add(op.PushData);
+			}
 			else if (op.Code == OpcodeType.OP_0)
+			{
 				data.Add(EmptyBytes);
+			}
 		}
 		AddEntries(data);
 		return this;
 	}
 
-	private static readonly byte[] EmptyBytes = new byte[0];
+	private static readonly byte[] EmptyBytes = Array.Empty<byte>();
 
 	/// <summary>
 	/// Adds a witness stack to the list of elements that will be used for building the filter.
@@ -192,8 +205,7 @@ public class Bip158GolombRiceFilterBuilder
 	/// <returns>The updated filter builder instance.</returns>
 	public void AddWitness(WitScript witScript)
 	{
-		if (witScript == null)
-			throw new ArgumentNullException(nameof(witScript));
+		ArgumentNullException.ThrowIfNull(witScript);
 
 		AddEntries(witScript.Pushes);
 	}
@@ -205,10 +217,9 @@ public class Bip158GolombRiceFilterBuilder
 	/// <returns>The updated filter builder instance.</returns>
 	public Bip158GolombRiceFilterBuilder AddOutPoint(OutPoint outpoint)
 	{
-		if (outpoint == null)
-			throw new ArgumentNullException(nameof(outpoint));
+		ArgumentNullException.ThrowIfNull(outpoint);
 
-		MemoryStream ms = new MemoryStream(32 + 4);
+		MemoryStream ms = new(32 + 4);
 		outpoint.ReadWrite(new BitcoinStream(ms, true));
 		_values.Add(ms.ToArrayEfficient());
 		return this;
@@ -221,8 +232,7 @@ public class Bip158GolombRiceFilterBuilder
 	/// <returns>The updated filter builder instance.</returns>
 	public Bip158GolombRiceFilterBuilder AddEntries(IEnumerable<byte[]> entries)
 	{
-		if (entries == null)
-			throw new ArgumentNullException(nameof(entries));
+		ArgumentNullException.ThrowIfNull(entries);
 
 		foreach (var entry in entries)
 		{
@@ -244,10 +254,10 @@ public class Bip158GolombRiceFilterBuilder
 		return new Bip158GolombRiceFilter(filterData, n, _p, _m);
 	}
 
-	private static byte[] Compress(ulong[] values, byte P)
+	private static byte[] Compress(ulong[] values, byte p)
 	{
 		var bitStream = new BitStream();
-		var sw = new GRCodedStreamWriter(bitStream, P);
+		var sw = new GRCodedStreamWriter(bitStream, p);
 
 		foreach (var value in values)
 		{
