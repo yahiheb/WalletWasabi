@@ -50,7 +50,6 @@ public class Bip158GolombRiceFilter
 	/// Creates a new Golomb-Rice filter from the data byte array which
 	/// contains a serialized filter. Uses the DefaultP value (20).
 	/// </summary>
-	/// <param name="data">A serialized Golomb-Rice filter.</param>
 	public static Bip158GolombRiceFilter Parse(string str)
 	{
 		var bytes = NBitcoin.DataEncoders.Encoders.Hex.DecodeData(str);
@@ -107,7 +106,7 @@ public class Bip158GolombRiceFilter
 	/// <summary>
 	/// Computes the sorted-and-uncompressed list of values to be included in the filter.
 	/// /// </summary>
-	/// <param name="P">P value used.</param>
+	/// <param name="p">p value used.</param>
 	/// <param name="key">Key used for hashing the data elements.</param>
 	/// <param name="data">Data elements to be computed in the list.</param>
 	/// <returns></returns>
