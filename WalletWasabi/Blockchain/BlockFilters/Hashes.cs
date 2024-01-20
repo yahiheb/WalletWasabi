@@ -39,11 +39,9 @@ public static class Hashes
 		sha256.DoFinal(rv, 0);
 		return rv;
 #else
-		using (var sha = System.Security.Cryptography.SHA256.Create())
-		{
-			var h = sha.ComputeHash(data, offset, count);
-			return sha.ComputeHash(h, 0, h.Length);
-		}
+		using var sha = System.Security.Cryptography.SHA256.Create();
+		var h = sha.ComputeHash(data, offset, count);
+		return sha.ComputeHash(h, 0, h.Length);
 #endif
 	}
 
@@ -79,8 +77,9 @@ public static class Hashes
 
 	public static byte[] RIPEMD160(byte[] data, int count)
 	{
-		if (data == null) throw new ArgumentNullException(nameof(data));
-		return RIPEMD160(data, 0, count);
+		return data == null
+			? throw new ArgumentNullException(nameof(data))
+			: RIPEMD160(data, 0, count);
 	}
 
 	public static byte[] RIPEMD160(byte[] data, int offset, int count)
@@ -92,10 +91,8 @@ public static class Hashes
 		ripemd.DoFinal(rv, 0);
 		return rv;
 #else
-		using(var ripm = new RIPEMD160Managed())
-		{
-			return ripm.ComputeHash(data, offset, count);
-		}
+		using var ripm = new RIPEMD160Managed();
+		return ripm.ComputeHash(data, offset, count);
 #endif
 	}
 	public static byte[] SHA1(byte[] data, int offset, int count)
@@ -107,10 +104,8 @@ public static class Hashes
 		sha1.DoFinal(rv, 0);
 		return rv;
 #else
-		using (var sha1 = System.Security.Cryptography.SHA1.Create())
-		{
-			return sha1.ComputeHash(data, offset, count);
-		}
+		using var sha1 = System.Security.Cryptography.SHA1.Create();
+		return sha1.ComputeHash(data, offset, count);
 #endif
 	}
 
@@ -118,25 +113,25 @@ public static class Hashes
 
 	internal struct SipHasher
 	{
-		ulong v_0;
-		ulong v_1;
-		ulong v_2;
-		ulong v_3;
-		ulong count;
-		ulong tmp;
+		ulong _v_0;
+		ulong _v_1;
+		ulong _v_2;
+		ulong _v_3;
+		ulong _count;
+		ulong _tmp;
 		public SipHasher(ulong k0, ulong k1)
 		{
-			v_0 = 0x736f6d6570736575UL ^ k0;
-			v_1 = 0x646f72616e646f6dUL ^ k1;
-			v_2 = 0x6c7967656e657261UL ^ k0;
-			v_3 = 0x7465646279746573UL ^ k1;
-			count = 0;
-			tmp = 0;
+			_v_0 = 0x736f6d6570736575UL ^ k0;
+			_v_1 = 0x646f72616e646f6dUL ^ k1;
+			_v_2 = 0x6c7967656e657261UL ^ k0;
+			_v_3 = 0x7465646279746573UL ^ k1;
+			_count = 0;
+			_tmp = 0;
 		}
 
 		public SipHasher Write(ulong data)
 		{
-			ulong v0 = v_0, v1 = v_1, v2 = v_2, v3 = v_3;
+			ulong v0 = _v_0, v1 = _v_1, v2 = _v_2, v3 = _v_3;
 			v3 ^= data;
 			//SIPROUND(ref v0, ref v1, ref v2, ref v3);
 			v0 += v1;
@@ -171,21 +166,21 @@ public static class Hashes
 			v2 = v2 << 32 | v2 >> 32;
 			v0 ^= data;
 
-			v_0 = v0;
-			v_1 = v1;
-			v_2 = v2;
-			v_3 = v3;
+			_v_0 = v0;
+			_v_1 = v1;
+			_v_2 = v2;
+			_v_3 = v3;
 
-			count += 8;
+			_count += 8;
 			return this;
 		}
 
 		public SipHasher Write(byte[] data)
 		{
-			ulong v0 = v_0, v1 = v_1, v2 = v_2, v3 = v_3;
+			ulong v0 = _v_0, v1 = _v_1, v2 = _v_2, v3 = _v_3;
 			var size = data.Length;
-			var t = tmp;
-			var c = count;
+			var t = _tmp;
+			var c = _count;
 			int offset = 0;
 
 			while (size-- != 0)
@@ -231,21 +226,21 @@ public static class Hashes
 				}
 			}
 
-			v_0 = v0;
-			v_1 = v1;
-			v_2 = v2;
-			v_3 = v3;
-			count = c;
-			tmp = t;
+			_v_0 = v0;
+			_v_1 = v1;
+			_v_2 = v2;
+			_v_3 = v3;
+			_count = c;
+			_tmp = t;
 
 			return this;
 		}
 
 		public ulong Finalize()
 		{
-			ulong v0 = v_0, v1 = v_1, v2 = v_2, v3 = v_3;
+			ulong v0 = _v_0, v1 = _v_1, v2 = _v_2, v3 = _v_3;
 
-			ulong t = tmp | (((ulong)count) << 56);
+			ulong t = _tmp | (_count << 56);
 
 			v3 ^= t;
 			//SIPROUND(ref v0, ref v1, ref v2, ref v3);
@@ -606,19 +601,14 @@ public static class Hashes
 
 		internal static ulong GetULong(uint256 val, int position)
 		{
-			switch (position)
+			return position switch
 			{
-				case 0:
-					return (ulong)val.pn0;
-				case 1:
-					return (ulong)val.pn1;
-				case 2:
-					return (ulong)val.pn2;
-				case 3:
-					return (ulong)val.pn3;
-				default:
-					throw new ArgumentOutOfRangeException("position should be less than 4", "position");
-			}
+				0 => (ulong)val.pn0,
+				1 => (ulong)val.pn1,
+				2 => (ulong)val.pn2,
+				3 => (ulong)val.pn3,
+				_ => throw new ArgumentOutOfRangeException("position should be less than 4", "position"),
+			};
 		}
 	}
 
@@ -647,10 +637,8 @@ public static class Hashes
 		sha256.DoFinal(rv, 0);
 		return rv;
 #else
-		using (var sha = System.Security.Cryptography.SHA256.Create())
-		{
-			return sha.ComputeHash(data, offset, count);
-		}
+		using var sha = System.Security.Cryptography.SHA256.Create();
+		return sha.ComputeHash(data, offset, count);
 #endif
 	}
 
@@ -669,19 +657,17 @@ public static class Hashes
 		sha512.DoFinal(rv, 0);
 		return rv;
 #else
-		using (var sha = System.Security.Cryptography.SHA512.Create())
-		{
-			return sha.ComputeHash(data, offset, count);
-		}
+		using var sha = System.Security.Cryptography.SHA512.Create();
+		return sha.ComputeHash(data, offset, count);
 #endif
 	}
 
-	private static uint rotl32(uint x, byte r)
+	private static uint Rotl32(uint x, byte r)
 	{
 		return (x << r) | (x >> (32 - r));
 	}
 
-	private static uint fmix(uint h)
+	private static uint Fmix(uint h)
 	{
 		h ^= h >> 16;
 		h *= 0x85ebca6b;
@@ -693,8 +679,8 @@ public static class Hashes
 	public static uint MurmurHash3(uint nHashSeed, byte[] vDataToHash)
 	{
 		// The following is MurmurHash3 (x86_32), see https://gist.github.com/automatonic/3725443
-		const uint c1 = 0xcc9e2d51;
-		const uint c2 = 0x1b873593;
+		const uint C1 = 0xcc9e2d51;
+		const uint C2 = 0x1b873593;
 
 		uint h1 = nHashSeed;
 		uint k1 = 0;
@@ -717,12 +703,12 @@ public static class Hashes
 						| chunk[3] << 24);
 
 						/* bitmagic hash */
-						k1 *= c1;
-						k1 = rotl32(k1, 15);
-						k1 *= c2;
+						k1 *= C1;
+						k1 = Rotl32(k1, 15);
+						k1 *= C2;
 
 						h1 ^= k1;
-						h1 = rotl32(h1, 13);
+						h1 = Rotl32(h1, 13);
 						h1 = h1 * 5 + 0xe6546b64;
 						break;
 					case 3:
@@ -730,25 +716,25 @@ public static class Hashes
 						(chunk[0]
 						| chunk[1] << 8
 						| chunk[2] << 16);
-						k1 *= c1;
-						k1 = rotl32(k1, 15);
-						k1 *= c2;
+						k1 *= C1;
+						k1 = Rotl32(k1, 15);
+						k1 *= C2;
 						h1 ^= k1;
 						break;
 					case 2:
 						k1 = (uint)
 						(chunk[0]
 						| chunk[1] << 8);
-						k1 *= c1;
-						k1 = rotl32(k1, 15);
-						k1 *= c2;
+						k1 *= C1;
+						k1 = Rotl32(k1, 15);
+						k1 *= C2;
 						h1 ^= k1;
 						break;
 					case 1:
-						k1 = (uint)(chunk[0]);
-						k1 *= c1;
-						k1 = rotl32(k1, 15);
-						k1 *= c2;
+						k1 = chunk[0];
+						k1 *= C1;
+						k1 = Rotl32(k1, 15);
+						k1 *= C2;
 						h1 ^= k1;
 						break;
 				}
@@ -757,7 +743,7 @@ public static class Hashes
 		}
 		// finalization, magic chants to wrap it all up
 		h1 ^= streamLength;
-		h1 = fmix(h1);
+		h1 = Fmix(h1);
 
 		unchecked //ignore overflow
 		{
