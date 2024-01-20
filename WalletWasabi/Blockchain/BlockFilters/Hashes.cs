@@ -3,7 +3,9 @@ using System.IO;
 using System.Linq;
 
 #if !NONATIVEHASH
+
 using System.Security.Cryptography;
+
 #endif
 
 namespace WalletWasabi.Blockchain.BlockFilters;
@@ -26,7 +28,8 @@ public static class Hashes
 	{
 		return new uint256(DoubleSHA256RawBytes(data, offset, count));
 	}
-	#endregion
+
+	#endregion DoubleSHA256
 
 	public static byte[] DoubleSHA256RawBytes(byte[] data, int offset, int count)
 	{
@@ -46,10 +49,12 @@ public static class Hashes
 	}
 
 	#region Hash160
-	public static uint160 Hash160(byte[] data)
+
+	public static Uint160 Hash160(byte[] data)
 	{
 		return Hash160(data, 0, data.Length);
 	}
+
 #if HAS_SPAN
 	public static uint160 Hash160(ReadOnlySpan<byte> data)
 	{
@@ -58,18 +63,20 @@ public static class Hashes
 	}
 #endif
 
-	public static uint160 Hash160(byte[] data, int count)
+	public static Uint160 Hash160(byte[] data, int count)
 	{
 		return Hash160(data, 0, count);
 	}
 
-	public static uint160 Hash160(byte[] data, int offset, int count)
+	public static Uint160 Hash160(byte[] data, int offset, int count)
 	{
-		return new uint160(RIPEMD160(SHA256(data, offset, count)));
+		return new Uint160(RIPEMD160(SHA256(data, offset, count)));
 	}
-	#endregion
+
+	#endregion Hash160
 
 	#region RIPEMD160
+
 	public static byte[] RIPEMD160(byte[] data)
 	{
 		return RIPEMD160(data, 0, data.Length);
@@ -95,6 +102,7 @@ public static class Hashes
 		return ripm.ComputeHash(data, offset, count);
 #endif
 	}
+
 	public static byte[] SHA1(byte[] data, int offset, int count)
 	{
 #if NO_NATIVESHA1
@@ -109,16 +117,17 @@ public static class Hashes
 #endif
 	}
 
-#endregion
+	#endregion RIPEMD160
 
 	internal struct SipHasher
 	{
-		ulong _v_0;
-		ulong _v_1;
-		ulong _v_2;
-		ulong _v_3;
-		ulong _count;
-		ulong _tmp;
+		private ulong _v_0;
+		private ulong _v_1;
+		private ulong _v_2;
+		private ulong _v_3;
+		private ulong _count;
+		private ulong _tmp;
+
 		public SipHasher(ulong k0, ulong k1)
 		{
 			_v_0 = 0x736f6d6570736575UL ^ k0;
@@ -603,10 +612,10 @@ public static class Hashes
 		{
 			return position switch
 			{
-				0 => (ulong)val.pn0,
-				1 => (ulong)val.pn1,
-				2 => (ulong)val.pn2,
-				3 => (ulong)val.pn3,
+				0 => val.pn0,
+				1 => val.pn1,
+				2 => val.pn2,
+				3 => val.pn3,
 				_ => throw new ArgumentOutOfRangeException("position should be less than 4", "position"),
 			};
 		}
@@ -621,6 +630,7 @@ public static class Hashes
 	{
 		return SHA256(data, 0, data.Length);
 	}
+
 #if HAS_SPAN
 	public static byte[] SHA256(ReadOnlySpan<byte> data)
 	{
@@ -641,7 +651,6 @@ public static class Hashes
 		return sha.ComputeHash(data, offset, count);
 #endif
 	}
-
 
 	public static byte[] SHA512(byte[] data)
 	{
@@ -676,6 +685,7 @@ public static class Hashes
 		h ^= h >> 16;
 		return h;
 	}
+
 	public static uint MurmurHash3(uint nHashSeed, byte[] vDataToHash)
 	{
 		// The following is MurmurHash3 (x86_32), see https://gist.github.com/automatonic/3725443
@@ -686,7 +696,7 @@ public static class Hashes
 		uint k1 = 0;
 		uint streamLength = 0;
 
-		using (BinaryReader reader = new BinaryReader(new MemoryStream(vDataToHash)))
+		using (BinaryReader reader = new(new MemoryStream(vDataToHash)))
 		{
 			byte[] chunk = reader.ReadBytes(4);
 			while (chunk.Length > 0)
@@ -711,6 +721,7 @@ public static class Hashes
 						h1 = Rotl32(h1, 13);
 						h1 = h1 * 5 + 0xe6546b64;
 						break;
+
 					case 3:
 						k1 = (uint)
 						(chunk[0]
@@ -721,6 +732,7 @@ public static class Hashes
 						k1 *= C2;
 						h1 ^= k1;
 						break;
+
 					case 2:
 						k1 = (uint)
 						(chunk[0]
@@ -730,6 +742,7 @@ public static class Hashes
 						k1 *= C2;
 						h1 ^= k1;
 						break;
+
 					case 1:
 						k1 = chunk[0];
 						k1 *= C1;
@@ -789,10 +802,12 @@ public static class Hashes
 	}
 
 #else
+
 	public static byte[] HMACSHA512(byte[] key, byte[] data)
 	{
 		return new HMACSHA512(key).ComputeHash(data);
 	}
+
 #if HAS_SPAN
 	public static bool HMACSHA512(byte[] key, ReadOnlySpan<byte> data, Span<byte> output, out int outputLength)
 	{
@@ -800,10 +815,12 @@ public static class Hashes
 		return hmac.TryComputeHash(data, output, out outputLength);
 	}
 #endif
+
 	public static byte[] HMACSHA256(byte[] key, byte[] data)
 	{
 		return new HMACSHA256(key).ComputeHash(data);
 	}
+
 #endif
 #if HAS_SPAN
 	public static void BIP32Hash(byte[] chainCode, uint nChild, byte header, Span<byte> data, Span<byte> output)
@@ -820,6 +837,7 @@ public static class Hashes
 			throw new InvalidOperationException("Could not compute BIP32 HMACSHA512");
 	}
 #endif
+
 	public static byte[] BIP32Hash(byte[] chainCode, uint nChild, byte header, byte[] data)
 	{
 		byte[] num = new byte[4];

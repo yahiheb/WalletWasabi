@@ -4,32 +4,23 @@ using NBitcoin.DataEncoders;
 
 namespace WalletWasabi.Blockchain.BlockFilters;
 
+#pragma warning disable IDE1006 // Naming Styles
+
 public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, IComparable
+#pragma warning restore IDE1006 // Naming Styles
 {
 	public class MutableUint256 : IBitcoinSerializable
 	{
-		private uint256 _Value;
-
-		public uint256 Value
-		{
-			get
-			{
-				return _Value;
-			}
-			set
-			{
-				_Value = value;
-			}
-		}
+		public uint256 Value { get; set; }
 
 		public MutableUint256()
 		{
-			_Value = uint256.Zero;
+			Value = Zero;
 		}
 
 		public MutableUint256(uint256 value)
 		{
-			_Value = value;
+			Value = value;
 		}
 
 		public void ReadWrite(BitcoinStream stream)
@@ -50,7 +41,7 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 #if !HAS_SPAN
 				byte[] b = new byte[WIDTH_BYTE];
 				stream.ReadWrite(b);
-				_Value = new uint256(b);
+				Value = new uint256(b);
 #else
 				Span<byte> b = stackalloc byte[WIDTH_BYTE];
 				stream.ReadWrite(b);
@@ -60,25 +51,9 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		}
 	}
 
-	private static readonly uint256 _Zero = new uint256();
+	public static uint256 Zero { get; } = new uint256();
 
-	public static uint256 Zero
-	{
-		get
-		{
-			return _Zero;
-		}
-	}
-
-	private static readonly uint256 _One = new uint256(1);
-
-	public static uint256 One
-	{
-		get
-		{
-			return _One;
-		}
-	}
+	public static uint256 One { get; } = new uint256(1);
 
 	public uint256()
 	{
@@ -99,20 +74,29 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 
 	public static bool TryParse(string hex, out uint256 result)
 	{
-		if (hex == null)
-			throw new ArgumentNullException(nameof(hex));
+		ArgumentNullException.ThrowIfNull(hex);
+
 		if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-			hex = hex.Substring(2);
+		{
+			hex = hex[2..];
+		}
+
 		result = null;
 		if (hex.Length != WIDTH_BYTE * 2)
+		{
 			return false;
+		}
+
 		if (!((HexEncoder)Encoders.Hex).IsValid(hex))
+		{
 			return false;
+		}
+
 		result = new uint256(hex);
 		return true;
 	}
 
-	private static readonly HexEncoder Encoder = new HexEncoder();
+	private static readonly HexEncoder Encoder = new();
 	private const int WIDTH_BYTE = 256 / 8;
 	internal readonly ulong pn0;
 	internal readonly ulong pn1;
@@ -138,28 +122,14 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 
 		var ulongIndex = index / sizeof(ulong);
 		var byteIndex = index % sizeof(ulong);
-		ulong value;
-		switch (ulongIndex)
+		var value = ulongIndex switch
 		{
-			case 0:
-				value = pn0;
-				break;
-
-			case 1:
-				value = pn1;
-				break;
-
-			case 2:
-				value = pn2;
-				break;
-
-			case 3:
-				value = pn3;
-				break;
-
-			default:
-				throw new ArgumentOutOfRangeException("index");
-		}
+			0 => pn0,
+			1 => pn1,
+			2 => pn2,
+			3 => pn3,
+			_ => throw new ArgumentOutOfRangeException(nameof(index)),
+		};
 		return (byte)(value >> (byteIndex * 8));
 	}
 
@@ -201,7 +171,10 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		if (!lendian)
 		{
 			if (length != vch.Length)
+			{
 				vch = vch.Take(32).ToArray();
+			}
+
 			vch = vch.Reverse().ToArray();
 		}
 
@@ -240,15 +213,20 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 	/// <param name="str"></param>
 	public uint256(string str)
 	{
-		if (str == null)
-			throw new ArgumentNullException(nameof(str));
+		ArgumentNullException.ThrowIfNull(str);
+
 		if (str.Length != 64)
 		{
 			if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-				str = str.Substring(2);
+			{
+				str = str[2..];
+			}
+
 			str = str.Trim();
 			if (str.Length != 64)
+			{
 				throw new FormatException("A uint256 must be 64 characters");
+			}
 		}
 
 #if HAS_SPAN
@@ -280,7 +258,9 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 			for (int nbits = 63; nbits > 0; nbits--)
 			{
 				if ((pn3 & 1UL << nbits) != 0)
+				{
 					return 64 * 3 + nbits + 1;
+				}
 			}
 			return 64 * 3 + 1;
 		}
@@ -289,7 +269,9 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 			for (int nbits = 63; nbits > 0; nbits--)
 			{
 				if ((pn2 & 1UL << nbits) != 0)
+				{
 					return 64 * 2 + nbits + 1;
+				}
 			}
 			return 64 * 2 + 1;
 		}
@@ -298,7 +280,9 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 			for (int nbits = 63; nbits > 0; nbits--)
 			{
 				if ((pn1 & 1UL << nbits) != 0)
+				{
 					return 64 * 1 + nbits + 1;
+				}
 			}
 			return 64 * 1 + 1;
 		}
@@ -307,7 +291,9 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 			for (int nbits = 63; nbits > 0; nbits--)
 			{
 				if ((pn0 & 1UL << nbits) != 0)
+				{
 					return 64 * 0 + nbits + 1;
+				}
 			}
 			return 64 * 0 + 1;
 		}
@@ -319,13 +305,13 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 	{
 	}
 
-	public override bool Equals(object obj)
+	public override bool Equals(object? obj)
 	{
 		var item = obj as uint256;
 		return Equals(item);
 	}
 
-	public bool Equals(uint256 other)
+	public bool Equals(uint256? other)
 	{
 		if (other is null)
 		{
@@ -340,23 +326,28 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		return equals;
 	}
 
-	public int CompareTo(uint256 other)
+	public int CompareTo(uint256? other)
 	{
 		return Comparison(this, other);
 	}
 
-	public int CompareTo(object obj)
+	public int CompareTo(object? obj)
 	{
 		return obj is uint256 v ? CompareTo(v) :
-			   obj is null ? CompareTo(null as uint256) : throw new ArgumentException($"Object is not an instance of uint256", nameof(obj));
+			   obj is null ? CompareTo(null) : throw new ArgumentException($"Object is not an instance of uint256", nameof(obj));
 	}
 
 	public static bool operator ==(uint256 a, uint256 b)
 	{
-		if (System.Object.ReferenceEquals(a, b))
+		if (ReferenceEquals(a, b))
+		{
 			return true;
-		if (((object)a == null) || ((object)b == null))
+		}
+
+		if ((a is null) || (b is null))
+		{
 			return false;
+		}
 
 		bool equals = true;
 		equals &= a.pn0 == b.pn0;
@@ -366,79 +357,91 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		return equals;
 	}
 
-	public static bool operator <(uint256 a, uint256 b)
-	{
-		return Comparison(a, b) < 0;
-	}
+	public static bool operator <(uint256 a, uint256 b) => Comparison(a, b) < 0;
 
-	public static bool operator >(uint256 a, uint256 b)
-	{
-		return Comparison(a, b) > 0;
-	}
+	public static bool operator >(uint256 a, uint256 b) => Comparison(a, b) > 0;
 
-	public static bool operator <=(uint256 a, uint256 b)
-	{
-		return Comparison(a, b) <= 0;
-	}
+	public static bool operator <=(uint256 a, uint256 b) => Comparison(a, b) <= 0;
 
-	public static bool operator >=(uint256 a, uint256 b)
-	{
-		return Comparison(a, b) >= 0;
-	}
+	public static bool operator >=(uint256 a, uint256 b) => Comparison(a, b) >= 0;
 
-	private static int Comparison(uint256 a, uint256 b)
+	private static int Comparison(uint256? a, uint256? b)
 	{
 		if (a is null && b is null)
+		{
 			return 0;
-		if (a is null && !(b is null))
+		}
+
+		if (a is null && b is not null)
+		{
 			return -1;
-		if (!(a is null) && b is null)
+		}
+
+		if (a is not null && b is null)
+		{
 			return 1;
+		}
+
 		if (a.pn3 < b.pn3)
+		{
 			return -1;
+		}
+
 		if (a.pn3 > b.pn3)
+		{
 			return 1;
+		}
+
 		if (a.pn2 < b.pn2)
+		{
 			return -1;
+		}
+
 		if (a.pn2 > b.pn2)
+		{
 			return 1;
+		}
+
 		if (a.pn1 < b.pn1)
+		{
 			return -1;
+		}
+
 		if (a.pn1 > b.pn1)
+		{
 			return 1;
+		}
+
 		if (a.pn0 < b.pn0)
+		{
 			return -1;
+		}
+
 		if (a.pn0 > b.pn0)
+		{
 			return 1;
+		}
+
 		return 0;
 	}
 
-	public static bool operator !=(uint256 a, uint256 b)
-	{
-		return !(a == b);
-	}
+	public static bool operator !=(uint256 a, uint256 b) => !(a == b);
 
-	public static bool operator ==(uint256 a, ulong b)
-	{
-		return (a == new uint256(b));
-	}
+	public static bool operator ==(uint256 a, ulong b) => (a == new uint256(b));
 
-	public static bool operator !=(uint256 a, ulong b)
-	{
-		return !(a == new uint256(b));
-	}
+	public static bool operator !=(uint256 a, ulong b) => !(a == new uint256(b));
 
-	public static implicit operator uint256(ulong value)
-	{
-		return new uint256(value);
-	}
+	public static implicit operator uint256(ulong value) => new(value);
 
 	public byte[] ToBytes(bool lendian = true)
 	{
 		var arr = new byte[WIDTH_BYTE];
 		ToBytes(arr);
 		if (!lendian)
+		{
 			Array.Reverse(arr);
+		}
+
 		return arr;
 	}
 
@@ -531,13 +534,7 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		return WIDTH_BYTE;
 	}
 
-	public int Size
-	{
-		get
-		{
-			return WIDTH_BYTE;
-		}
-	}
+	public int Size => WIDTH_BYTE;
 
 	public ulong GetLow64()
 	{
@@ -563,32 +560,20 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 	}
 }
 
-public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, IComparable
+public sealed class Uint160 : IComparable<Uint160>, IEquatable<Uint160>, IComparable
 {
 	public class MutableUint160 : IBitcoinSerializable
 	{
-		private uint160 _Value;
-
-		public uint160 Value
-		{
-			get
-			{
-				return _Value;
-			}
-			set
-			{
-				_Value = value;
-			}
-		}
+		public Uint160 Value { get; set; }
 
 		public MutableUint160()
 		{
-			_Value = uint160.Zero;
+			Value = Zero;
 		}
 
-		public MutableUint160(uint160 value)
+		public MutableUint160(Uint160 value)
 		{
-			_Value = value;
+			Value = value;
 		}
 
 		public void ReadWrite(BitcoinStream stream)
@@ -602,36 +587,20 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 			{
 				byte[] b = new byte[WIDTH_BYTE];
 				stream.ReadWrite(b);
-				_Value = new uint160(b);
+				Value = new Uint160(b);
 			}
 		}
 	}
 
-	private static readonly uint160 _Zero = new uint160();
+	public static Uint160 Zero { get; } = new Uint160();
 
-	public static uint160 Zero
-	{
-		get
-		{
-			return _Zero;
-		}
-	}
+	public static Uint160 One { get; } = new Uint160(1);
 
-	private static readonly uint160 _One = new uint160(1);
-
-	public static uint160 One
-	{
-		get
-		{
-			return _One;
-		}
-	}
-
-	public uint160()
+	public Uint160()
 	{
 	}
 
-	public uint160(uint160 b)
+	public Uint160(Uint160 b)
 	{
 		pn0 = b.pn0;
 		pn1 = b.pn1;
@@ -640,64 +609,56 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		pn4 = b.pn4;
 	}
 
-	public static uint160 Parse(string hex)
+	public static Uint160 Parse(string hex)
 	{
-		return new uint160(hex);
+		return new Uint160(hex);
 	}
 
-	public static bool TryParse(string hex, out uint160 result)
+	public static bool TryParse(string hex, out Uint160 result)
 	{
-		if (hex == null)
-			throw new ArgumentNullException(nameof(hex));
+		ArgumentNullException.ThrowIfNull(hex);
+
 		if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-			hex = hex.Substring(2);
+		{
+			hex = hex[2..];
+		}
+
 		result = null;
 		if (hex.Length != WIDTH_BYTE * 2)
+		{
 			return false;
+		}
+
 		if (!((HexEncoder)Encoders.Hex).IsValid(hex))
+		{
 			return false;
-		result = new uint160(hex);
+		}
+
+		result = new Uint160(hex);
 		return true;
 	}
 
-	private static readonly HexEncoder Encoder = new HexEncoder();
+	private static readonly HexEncoder Encoder = new();
 	private const int WIDTH_BYTE = 160 / 8;
-	internal readonly UInt32 pn0;
-	internal readonly UInt32 pn1;
-	internal readonly UInt32 pn2;
-	internal readonly UInt32 pn3;
-	internal readonly UInt32 pn4;
+	internal readonly uint pn0;
+	internal readonly uint pn1;
+	internal readonly uint pn2;
+	internal readonly uint pn3;
+	internal readonly uint pn4;
 
 	public byte GetByte(int index)
 	{
 		var uintIndex = index / sizeof(uint);
 		var byteIndex = index % sizeof(uint);
-		UInt32 value;
-		switch (uintIndex)
+		var value = uintIndex switch
 		{
-			case 0:
-				value = pn0;
-				break;
-
-			case 1:
-				value = pn1;
-				break;
-
-			case 2:
-				value = pn2;
-				break;
-
-			case 3:
-				value = pn3;
-				break;
-
-			case 4:
-				value = pn4;
-				break;
-
-			default:
-				throw new ArgumentOutOfRangeException("index");
-		}
+			0 => pn0,
+			1 => pn1,
+			2 => pn2,
+			3 => pn3,
+			4 => pn4,
+			_ => throw new ArgumentOutOfRangeException(nameof(index)),
+		};
 		return (byte)(value >> (byteIndex * 8));
 	}
 
@@ -706,7 +667,7 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		return Encoder.EncodeData(ToBytes().Reverse().ToArray());
 	}
 
-	public uint160(ulong b)
+	public Uint160(ulong b)
 	{
 		pn0 = (uint)b;
 		pn1 = (uint)(b >> 32);
@@ -715,7 +676,7 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		pn4 = 0;
 	}
 
-	public uint160(byte[] vch, bool lendian = true)
+	public Uint160(byte[] vch, bool lendian = true)
 	{
 		if (vch.Length != WIDTH_BYTE)
 		{
@@ -723,7 +684,9 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		}
 
 		if (!lendian)
+		{
 			vch = vch.Reverse().ToArray();
+		}
 
 		pn0 = Utils.ToUInt32(vch, 4 * 0, true);
 		pn1 = Utils.ToUInt32(vch, 4 * 1, true);
@@ -732,7 +695,7 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		pn4 = Utils.ToUInt32(vch, 4 * 4, true);
 	}
 
-	public uint160(string str)
+	public Uint160(string str)
 	{
 		pn0 = 0;
 		pn1 = 0;
@@ -742,11 +705,16 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		str = str.Trim();
 
 		if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-			str = str.Substring(2);
+		{
+			str = str[2..];
+		}
 
 		var bytes = Encoder.DecodeData(str).Reverse().ToArray();
 		if (bytes.Length != WIDTH_BYTE)
+		{
 			throw new FormatException("Invalid hex length");
+		}
+
 		pn0 = Utils.ToUInt32(bytes, 4 * 0, true);
 		pn1 = Utils.ToUInt32(bytes, 4 * 1, true);
 		pn2 = Utils.ToUInt32(bytes, 4 * 2, true);
@@ -754,21 +722,24 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		pn4 = Utils.ToUInt32(bytes, 4 * 4, true);
 	}
 
-	public uint160(byte[] vch)
+	public Uint160(byte[] vch)
 		: this(vch, true)
 	{
 	}
 
-	public override bool Equals(object obj)
+	public override bool Equals(object? obj)
 	{
-		var item = obj as uint160;
+		var item = obj as Uint160;
 		return Equals(item);
 	}
 
-	public bool Equals(uint160 other)
+	public bool Equals(Uint160? other)
 	{
 		if (other is null)
+		{
 			return false;
+		}
+
 		bool equals = true;
 		equals &= pn0 == other.pn0;
 		equals &= pn1 == other.pn1;
@@ -778,23 +749,28 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		return equals;
 	}
 
-	public int CompareTo(uint160 other)
+	public int CompareTo(Uint160? other)
 	{
 		return Comparison(this, other);
 	}
 
-	public int CompareTo(object obj)
+	public int CompareTo(object? obj)
 	{
-		return obj is uint160 v ? CompareTo(v) :
-			   obj is null ? CompareTo(null as uint160) : throw new ArgumentException($"Object is not an instance of uint160", nameof(obj));
+		return obj is Uint160 v ? CompareTo(v) :
+			   obj is null ? CompareTo(null) : throw new ArgumentException($"Object is not an instance of Uint160", nameof(obj));
 	}
 
-	public static bool operator ==(uint160 a, uint160 b)
+	public static bool operator ==(Uint160 a, Uint160 b)
 	{
-		if (System.Object.ReferenceEquals(a, b))
+		if (ReferenceEquals(a, b))
+		{
 			return true;
-		if (((object)a == null) || ((object)b == null))
+		}
+
+		if ((a is null) || (b is null))
+		{
 			return false;
+		}
 
 		bool equals = true;
 		equals &= a.pn0 == b.pn0;
@@ -805,76 +781,91 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		return equals;
 	}
 
-	public static bool operator <(uint160 a, uint160 b)
-	{
-		return Comparison(a, b) < 0;
-	}
+	public static bool operator <(Uint160 a, Uint160 b) => Comparison(a, b) < 0;
 
-	public static bool operator >(uint160 a, uint160 b)
-	{
-		return Comparison(a, b) > 0;
-	}
+	public static bool operator >(Uint160 a, Uint160 b) => Comparison(a, b) > 0;
 
-	public static bool operator <=(uint160 a, uint160 b)
-	{
-		return Comparison(a, b) <= 0;
-	}
+	public static bool operator <=(Uint160 a, Uint160 b) => Comparison(a, b) <= 0;
 
-	public static bool operator >=(uint160 a, uint160 b)
-	{
-		return Comparison(a, b) >= 0;
-	}
+	public static bool operator >=(Uint160 a, Uint160 b) => Comparison(a, b) >= 0;
 
-	private static int Comparison(uint160 a, uint160 b)
+	private static int Comparison(Uint160? a, Uint160? b)
 	{
 		if (a is null && b is null)
+		{
 			return 0;
-		if (a is null && !(b is null))
+		}
+
+		if (a is null && b is not null)
+		{
 			return -1;
-		if (!(a is null) && b is null)
+		}
+
+		if (a is not null && b is null)
+		{
 			return 1;
+		}
+
 		if (a.pn4 < b.pn4)
+		{
 			return -1;
+		}
+
 		if (a.pn4 > b.pn4)
+		{
 			return 1;
+		}
+
 		if (a.pn3 < b.pn3)
+		{
 			return -1;
+		}
+
 		if (a.pn3 > b.pn3)
+		{
 			return 1;
+		}
+
 		if (a.pn2 < b.pn2)
+		{
 			return -1;
+		}
+
 		if (a.pn2 > b.pn2)
+		{
 			return 1;
+		}
+
 		if (a.pn1 < b.pn1)
+		{
 			return -1;
+		}
+
 		if (a.pn1 > b.pn1)
+		{
 			return 1;
+		}
+
 		if (a.pn0 < b.pn0)
+		{
 			return -1;
+		}
+
 		if (a.pn0 > b.pn0)
+		{
 			return 1;
+		}
+
 		return 0;
 	}
 
-	public static bool operator !=(uint160 a, uint160 b)
-	{
-		return !(a == b);
-	}
+	public static bool operator !=(Uint160 a, Uint160 b) => !(a == b);
 
-	public static bool operator ==(uint160 a, ulong b)
-	{
-		return (a == new uint160(b));
-	}
+	public static bool operator ==(Uint160 a, ulong b) => (a == new Uint160(b));
 
-	public static bool operator !=(uint160 a, ulong b)
-	{
-		return !(a == new uint160(b));
-	}
+	public static bool operator !=(Uint160 a, ulong b) => !(a == new Uint160(b));
 
-	public static implicit operator uint160(ulong value)
-	{
-		return new uint160(value);
-	}
+	public static implicit operator Uint160(ulong value) => new(value);
 
 	public byte[] ToBytes(bool lendian = true)
 	{
@@ -885,7 +876,10 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		Buffer.BlockCopy(Utils.ToBytes(pn3, true), 0, arr, 4 * 3, 4);
 		Buffer.BlockCopy(Utils.ToBytes(pn4, true), 0, arr, 4 * 4, 4);
 		if (!lendian)
+		{
 			Array.Reverse(arr);
+		}
+
 		return arr;
 	}
 
@@ -899,13 +893,7 @@ public sealed class uint160 : IComparable<uint160>, IEquatable<uint160>, ICompar
 		return WIDTH_BYTE;
 	}
 
-	public int Size
-	{
-		get
-		{
-			return WIDTH_BYTE;
-		}
-	}
+	public int Size => WIDTH_BYTE;
 
 	public ulong GetLow64()
 	{
