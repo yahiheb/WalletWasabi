@@ -18,43 +18,6 @@ public class Bip158GolombRiceFilter
 	internal const uint DefaultM = 784_931;
 
 	/// <summary>
-	/// a value which is computed as 1/fp where fp is the desired false positive rate.
-	/// </summary>
-	public byte P { get; }
-
-	/// <summary>
-	/// a value which is computed as N * fp (or false positive rate = 1/M).
-	/// this value allows filter to uniquely tune the range that items are hashed onto
-	/// before compressing
-	/// </summary>
-	public uint M { get; }
-
-	/// <summary>
-	/// Number of elements in the filter
-	/// </summary>
-	public int N { get; }
-
-	/// <summary>
-	/// Raw filter data
-	/// </summary>
-	public byte[] Data { get; }
-
-	private ulong ModulusP { get; }
-	private ulong ModulusNP { get; }
-
-	public static Bip158GolombRiceFilter Empty { get; } = new Bip158GolombRiceFilter(new byte[] { 0 });
-
-	/// <summary>
-	/// Creates a new Golomb-Rice filter from the data byte array which
-	/// contains a serialized filter. Uses the DefaultP value (20).
-	/// </summary>
-	public static Bip158GolombRiceFilter Parse(string str)
-	{
-		var bytes = NBitcoin.DataEncoders.Encoders.Hex.DecodeData(str);
-		return new Bip158GolombRiceFilter(bytes);
-	}
-
-	/// <summary>
 	/// Creates a new Golomb-Rice filter from the data byte array which
 	/// contains a serialized filter. Uses the DefaultP value (20).
 	/// </summary>
@@ -99,6 +62,43 @@ public class Bip158GolombRiceFilter
 		ModulusP = 1UL << P;
 		ModulusNP = (ulong)N * M;
 		Data = data;
+	}
+
+	/// <summary>
+	/// a value which is computed as 1/fp where fp is the desired false positive rate.
+	/// </summary>
+	public byte P { get; }
+
+	/// <summary>
+	/// a value which is computed as N * fp (or false positive rate = 1/M).
+	/// this value allows filter to uniquely tune the range that items are hashed onto
+	/// before compressing
+	/// </summary>
+	public uint M { get; }
+
+	/// <summary>
+	/// Number of elements in the filter
+	/// </summary>
+	public int N { get; }
+
+	/// <summary>
+	/// Raw filter data
+	/// </summary>
+	public byte[] Data { get; }
+
+	private ulong ModulusP { get; }
+	private ulong ModulusNP { get; }
+
+	public static Bip158GolombRiceFilter Empty { get; } = new Bip158GolombRiceFilter(new byte[] { 0 });
+
+	/// <summary>
+	/// Creates a new Golomb-Rice filter from the data byte array which
+	/// contains a serialized filter. Uses the DefaultP value (20).
+	/// </summary>
+	public static Bip158GolombRiceFilter Parse(string str)
+	{
+		var bytes = NBitcoin.DataEncoders.Encoders.Hex.DecodeData(str);
+		return new Bip158GolombRiceFilter(bytes);
 	}
 
 	/// <summary>

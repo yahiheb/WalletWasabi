@@ -264,7 +264,8 @@ public class GRCodedStreamReader
 	}
 
 	internal virtual void ResetPosition()
-	{ }
+	{
+	}
 
 	private bool TryReadUInt64(out ulong value)
 	{

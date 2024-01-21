@@ -16,46 +16,14 @@ public class Bip158GolombRiceFilterBuilder
 	private byte[] _key;
 	private HashSet<byte[]> _values;
 
+	private static readonly byte[] EmptyBytes = Array.Empty<byte>();
+
 	/// <summary>
-	/// Helper class for making sure not two identical data elements are
-	/// included in a filter.
+	/// Creates a new Golomb-Rice filter builder.
 	/// </summary>
-	private class ByteArrayComparer : IEqualityComparer<byte[]>
+	public Bip158GolombRiceFilterBuilder()
 	{
-		public static readonly ByteArrayComparer Instance = new();
-
-		private ByteArrayComparer()
-		{
-		}
-
-		public bool Equals(byte[] a, byte[] b)
-		{
-			if (a.Length != b.Length)
-			{
-				return false;
-			}
-
-			for (int i = 0; i < a.Length; i++)
-			{
-				if (a[i] != b[i])
-				{
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		public int GetHashCode(byte[] a)
-		{
-			uint b = 0;
-			for (int i = 0; i < a.Length; i++)
-			{
-				b = ((b << 23) | (b >> 9)) ^ a[i];
-			}
-
-			return unchecked((int)b);
-		}
+		_values = new HashSet<byte[]>(ByteArrayComparer.Instance);
 	}
 
 	/// <summary>
@@ -93,14 +61,6 @@ public class Bip158GolombRiceFilterBuilder
 		}
 
 		return builder.Build();
-	}
-
-	/// <summary>
-	/// Creates a new Golomb-Rice filter builder.
-	/// </summary>
-	public Bip158GolombRiceFilterBuilder()
-	{
-		_values = new HashSet<byte[]>(ByteArrayComparer.Instance);
 	}
 
 	/// <summary>
@@ -196,8 +156,6 @@ public class Bip158GolombRiceFilterBuilder
 		return this;
 	}
 
-	private static readonly byte[] EmptyBytes = Array.Empty<byte>();
-
 	/// <summary>
 	/// Adds a witness stack to the list of elements that will be used for building the filter.
 	/// </summary>
@@ -264,5 +222,47 @@ public class Bip158GolombRiceFilterBuilder
 			sw.Write(value);
 		}
 		return bitStream.ToByteArray();
+	}
+
+	/// <summary>
+	/// Helper class for making sure not two identical data elements are
+	/// included in a filter.
+	/// </summary>
+	private class ByteArrayComparer : IEqualityComparer<byte[]>
+	{
+		public static readonly ByteArrayComparer Instance = new();
+
+		private ByteArrayComparer()
+		{
+		}
+
+		public bool Equals(byte[] a, byte[] b)
+		{
+			if (a.Length != b.Length)
+			{
+				return false;
+			}
+
+			for (int i = 0; i < a.Length; i++)
+			{
+				if (a[i] != b[i])
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		public int GetHashCode(byte[] a)
+		{
+			uint b = 0;
+			for (int i = 0; i < a.Length; i++)
+			{
+				b = ((b << 23) | (b >> 9)) ^ a[i];
+			}
+
+			return unchecked((int)b);
+		}
 	}
 }

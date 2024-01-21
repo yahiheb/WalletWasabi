@@ -9,51 +9,12 @@ namespace WalletWasabi.Blockchain.BlockFilters;
 public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, IComparable
 #pragma warning restore IDE1006 // Naming Styles
 {
-	public class MutableUint256 : IBitcoinSerializable
-	{
-		public uint256 Value { get; set; }
-
-		public MutableUint256()
-		{
-			Value = Zero;
-		}
-
-		public MutableUint256(uint256 value)
-		{
-			Value = value;
-		}
-
-		public void ReadWrite(BitcoinStream stream)
-		{
-			if (stream.Serializing)
-			{
-#if !HAS_SPAN
-				var b = Value.ToBytes();
-				stream.ReadWrite(b);
-#else
-				Span<byte> b = stackalloc byte[WIDTH_BYTE];
-				Value.ToBytes(b);
-				stream.ReadWrite(b);
-#endif
-			}
-			else
-			{
-#if !HAS_SPAN
-				byte[] b = new byte[WIDTH_BYTE];
-				stream.ReadWrite(b);
-				Value = new uint256(b);
-#else
-				Span<byte> b = stackalloc byte[WIDTH_BYTE];
-				stream.ReadWrite(b);
-				_Value = new uint256(b);
-#endif
-			}
-		}
-	}
-
-	public static uint256 Zero { get; } = new uint256();
-
-	public static uint256 One { get; } = new uint256(1);
+	private static readonly HexEncoder Encoder = new();
+	private const int WIDTH_BYTE = 256 / 8;
+	internal readonly ulong pn0;
+	internal readonly ulong pn1;
+	internal readonly ulong pn2;
+	internal readonly ulong pn3;
 
 	public uint256()
 	{
@@ -65,79 +26,6 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		pn1 = b.pn1;
 		pn2 = b.pn2;
 		pn3 = b.pn3;
-	}
-
-	public static uint256 Parse(string hex)
-	{
-		return new uint256(hex);
-	}
-
-	public static bool TryParse(string hex, out uint256 result)
-	{
-		ArgumentNullException.ThrowIfNull(hex);
-
-		if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-		{
-			hex = hex[2..];
-		}
-
-		result = null;
-		if (hex.Length != WIDTH_BYTE * 2)
-		{
-			return false;
-		}
-
-		if (!((HexEncoder)Encoders.Hex).IsValid(hex))
-		{
-			return false;
-		}
-
-		result = new uint256(hex);
-		return true;
-	}
-
-	private static readonly HexEncoder Encoder = new();
-	private const int WIDTH_BYTE = 256 / 8;
-	internal readonly ulong pn0;
-	internal readonly ulong pn1;
-	internal readonly ulong pn2;
-	internal readonly ulong pn3;
-
-	public byte GetByte(int index)
-	{
-#if HAS_SPAN
-		if (index < 0 || index > 31)
-			throw new ArgumentOutOfRangeException("index");
-		if (BitConverter.IsLittleEndian)
-		{
-			Span<ulong> temp = stackalloc ulong[4];
-			temp[0] = pn0;
-			temp[1] = pn1;
-			temp[2] = pn2;
-			temp[3] = pn3;
-			Span<byte> temp2 = MemoryMarshal.Cast<ulong, byte>(temp);
-			return temp2[index];
-		}
-#endif
-
-		var ulongIndex = index / sizeof(ulong);
-		var byteIndex = index % sizeof(ulong);
-		var value = ulongIndex switch
-		{
-			0 => pn0,
-			1 => pn1,
-			2 => pn2,
-			3 => pn3,
-			_ => throw new ArgumentOutOfRangeException(nameof(index)),
-		};
-		return (byte)(value >> (byteIndex * 8));
-	}
-
-	public override string ToString()
-	{
-		var bytes = ToBytes();
-		Array.Reverse(bytes);
-		return Encoder.EncodeData(bytes);
 	}
 
 	public uint256(ulong b)
@@ -251,6 +139,83 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		pn3 = Utils.ToUInt64(bytes, 8 * 3, true);
 	}
 
+	public uint256(byte[] vch)
+		: this(vch, true)
+	{
+	}
+
+	public static uint256 Zero { get; } = new uint256();
+
+	public static uint256 One { get; } = new uint256(1);
+
+	public int Size => WIDTH_BYTE;
+
+	public static uint256 Parse(string hex)
+	{
+		return new uint256(hex);
+	}
+
+	public static bool TryParse(string hex, out uint256 result)
+	{
+		ArgumentNullException.ThrowIfNull(hex);
+
+		if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+		{
+			hex = hex[2..];
+		}
+
+		result = null;
+		if (hex.Length != WIDTH_BYTE * 2)
+		{
+			return false;
+		}
+
+		if (!((HexEncoder)Encoders.Hex).IsValid(hex))
+		{
+			return false;
+		}
+
+		result = new uint256(hex);
+		return true;
+	}
+
+	public byte GetByte(int index)
+	{
+#if HAS_SPAN
+		if (index < 0 || index > 31)
+			throw new ArgumentOutOfRangeException("index");
+		if (BitConverter.IsLittleEndian)
+		{
+			Span<ulong> temp = stackalloc ulong[4];
+			temp[0] = pn0;
+			temp[1] = pn1;
+			temp[2] = pn2;
+			temp[3] = pn3;
+			Span<byte> temp2 = MemoryMarshal.Cast<ulong, byte>(temp);
+			return temp2[index];
+		}
+#endif
+
+		var ulongIndex = index / sizeof(ulong);
+		var byteIndex = index % sizeof(ulong);
+		var value = ulongIndex switch
+		{
+			0 => pn0,
+			1 => pn1,
+			2 => pn2,
+			3 => pn3,
+			_ => throw new ArgumentOutOfRangeException(nameof(index)),
+		};
+		return (byte)(value >> (byteIndex * 8));
+	}
+
+	public override string ToString()
+	{
+		var bytes = ToBytes();
+		Array.Reverse(bytes);
+		return Encoder.EncodeData(bytes);
+	}
+
 	public int GetBisCount()
 	{
 		if (pn3 != 0)
@@ -298,11 +263,6 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 			return 64 * 0 + 1;
 		}
 		return 0;
-	}
-
-	public uint256(byte[] vch)
-		: this(vch, true)
-	{
 	}
 
 	public override bool Equals(object? obj)
@@ -534,8 +494,6 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 		return WIDTH_BYTE;
 	}
 
-	public int Size => WIDTH_BYTE;
-
 	public ulong GetLow64()
 	{
 		return pn0;
@@ -558,43 +516,59 @@ public sealed class uint256 : IComparable<uint256>, IEquatable<uint256>, ICompar
 			return (int)hash;
 		}
 	}
-}
 
-public sealed class Uint160 : IComparable<Uint160>, IEquatable<Uint160>, IComparable
-{
-	public class MutableUint160 : IBitcoinSerializable
+	public class MutableUint256 : IBitcoinSerializable
 	{
-		public Uint160 Value { get; set; }
-
-		public MutableUint160()
+		public MutableUint256()
 		{
 			Value = Zero;
 		}
 
-		public MutableUint160(Uint160 value)
+		public MutableUint256(uint256 value)
 		{
 			Value = value;
 		}
+
+		public uint256 Value { get; set; }
 
 		public void ReadWrite(BitcoinStream stream)
 		{
 			if (stream.Serializing)
 			{
+#if !HAS_SPAN
 				var b = Value.ToBytes();
 				stream.ReadWrite(b);
+#else
+				Span<byte> b = stackalloc byte[WIDTH_BYTE];
+				Value.ToBytes(b);
+				stream.ReadWrite(b);
+#endif
 			}
 			else
 			{
+#if !HAS_SPAN
 				byte[] b = new byte[WIDTH_BYTE];
 				stream.ReadWrite(b);
-				Value = new Uint160(b);
+				Value = new uint256(b);
+#else
+				Span<byte> b = stackalloc byte[WIDTH_BYTE];
+				stream.ReadWrite(b);
+				_Value = new uint256(b);
+#endif
 			}
 		}
 	}
+}
 
-	public static Uint160 Zero { get; } = new Uint160();
-
-	public static Uint160 One { get; } = new Uint160(1);
+public sealed class Uint160 : IComparable<Uint160>, IEquatable<Uint160>, IComparable
+{
+	private static readonly HexEncoder Encoder = new();
+	private const int WIDTH_BYTE = 160 / 8;
+	internal readonly uint pn0;
+	internal readonly uint pn1;
+	internal readonly uint pn2;
+	internal readonly uint pn3;
+	internal readonly uint pn4;
 
 	public Uint160()
 	{
@@ -607,64 +581,6 @@ public sealed class Uint160 : IComparable<Uint160>, IEquatable<Uint160>, ICompar
 		pn2 = b.pn2;
 		pn3 = b.pn3;
 		pn4 = b.pn4;
-	}
-
-	public static Uint160 Parse(string hex)
-	{
-		return new Uint160(hex);
-	}
-
-	public static bool TryParse(string hex, out Uint160 result)
-	{
-		ArgumentNullException.ThrowIfNull(hex);
-
-		if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-		{
-			hex = hex[2..];
-		}
-
-		result = null;
-		if (hex.Length != WIDTH_BYTE * 2)
-		{
-			return false;
-		}
-
-		if (!((HexEncoder)Encoders.Hex).IsValid(hex))
-		{
-			return false;
-		}
-
-		result = new Uint160(hex);
-		return true;
-	}
-
-	private static readonly HexEncoder Encoder = new();
-	private const int WIDTH_BYTE = 160 / 8;
-	internal readonly uint pn0;
-	internal readonly uint pn1;
-	internal readonly uint pn2;
-	internal readonly uint pn3;
-	internal readonly uint pn4;
-
-	public byte GetByte(int index)
-	{
-		var uintIndex = index / sizeof(uint);
-		var byteIndex = index % sizeof(uint);
-		var value = uintIndex switch
-		{
-			0 => pn0,
-			1 => pn1,
-			2 => pn2,
-			3 => pn3,
-			4 => pn4,
-			_ => throw new ArgumentOutOfRangeException(nameof(index)),
-		};
-		return (byte)(value >> (byteIndex * 8));
-	}
-
-	public override string ToString()
-	{
-		return Encoder.EncodeData(ToBytes().Reverse().ToArray());
 	}
 
 	public Uint160(ulong b)
@@ -725,6 +641,62 @@ public sealed class Uint160 : IComparable<Uint160>, IEquatable<Uint160>, ICompar
 	public Uint160(byte[] vch)
 		: this(vch, true)
 	{
+	}
+
+	public static Uint160 Zero { get; } = new Uint160();
+
+	public static Uint160 One { get; } = new Uint160(1);
+
+	public int Size => WIDTH_BYTE;
+
+	public static Uint160 Parse(string hex)
+	{
+		return new Uint160(hex);
+	}
+
+	public static bool TryParse(string hex, out Uint160 result)
+	{
+		ArgumentNullException.ThrowIfNull(hex);
+
+		if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+		{
+			hex = hex[2..];
+		}
+
+		result = null;
+		if (hex.Length != WIDTH_BYTE * 2)
+		{
+			return false;
+		}
+
+		if (!((HexEncoder)Encoders.Hex).IsValid(hex))
+		{
+			return false;
+		}
+
+		result = new Uint160(hex);
+		return true;
+	}
+
+	public byte GetByte(int index)
+	{
+		var uintIndex = index / sizeof(uint);
+		var byteIndex = index % sizeof(uint);
+		var value = uintIndex switch
+		{
+			0 => pn0,
+			1 => pn1,
+			2 => pn2,
+			3 => pn3,
+			4 => pn4,
+			_ => throw new ArgumentOutOfRangeException(nameof(index)),
+		};
+		return (byte)(value >> (byteIndex * 8));
+	}
+
+	public override string ToString()
+	{
+		return Encoder.EncodeData(ToBytes().Reverse().ToArray());
 	}
 
 	public override bool Equals(object? obj)
@@ -893,8 +865,6 @@ public sealed class Uint160 : IComparable<Uint160>, IEquatable<Uint160>, ICompar
 		return WIDTH_BYTE;
 	}
 
-	public int Size => WIDTH_BYTE;
-
 	public ulong GetLow64()
 	{
 		return pn0 | (ulong)pn1 << 32;
@@ -917,5 +887,35 @@ public sealed class Uint160 : IComparable<Uint160>, IEquatable<Uint160>, ICompar
 			hash = hash * 31 + (int)pn4;
 		}
 		return hash;
+	}
+
+	public class MutableUint160 : IBitcoinSerializable
+	{
+		public MutableUint160()
+		{
+			Value = Zero;
+		}
+
+		public MutableUint160(Uint160 value)
+		{
+			Value = value;
+		}
+
+		public Uint160 Value { get; set; }
+
+		public void ReadWrite(BitcoinStream stream)
+		{
+			if (stream.Serializing)
+			{
+				var b = Value.ToBytes();
+				stream.ReadWrite(b);
+			}
+			else
+			{
+				byte[] b = new byte[WIDTH_BYTE];
+				stream.ReadWrite(b);
+				Value = new Uint160(b);
+			}
+		}
 	}
 }
