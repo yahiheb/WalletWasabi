@@ -1,4 +1,3 @@
-using NBitcoin;
 using System.IO;
 using System.Linq;
 
@@ -616,7 +615,7 @@ public static class Hashes
 				1 => val.pn1,
 				2 => val.pn2,
 				3 => val.pn3,
-				_ => throw new ArgumentOutOfRangeException("position should be less than 4", "position"),
+				_ => throw new ArgumentOutOfRangeException(nameof(position), "position should be less than 4"),
 			};
 		}
 	}

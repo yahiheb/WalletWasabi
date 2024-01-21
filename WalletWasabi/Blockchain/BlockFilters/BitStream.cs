@@ -1,10 +1,9 @@
-using System;
 using System.Collections.Generic;
 
 namespace WalletWasabi.Blockchain.BlockFilters;
 
 /// <summary> Provides a view of an array of bits as a stream of bits. </summary>
-class BitStream
+internal class BitStream
 {
 	private byte[] _buffer;
 	private int _writePos;
@@ -101,12 +100,12 @@ class BitStream
 		while (count >= 8)
 		{
 			val <<= 8;
-			if (!TryReadByte(out var readedByte))
+			if (!TryReadByte(out var readByte))
 			{
 				bits = 0U;
 				return false;
 			}
-			val |= readedByte;
+			val |= readByte;
 			count -= 8;
 		}
 
@@ -252,9 +251,9 @@ public class GRCodedStreamReader
 
 	public virtual bool TryRead(out ulong value)
 	{
-		if (TryReadUInt64(out var readedValue))
+		if (TryReadUInt64(out var readValue))
 		{
-			var currentValue = _lastValue + readedValue;
+			var currentValue = _lastValue + readValue;
 			_lastValue = currentValue;
 			value = currentValue;
 			return true;
@@ -264,7 +263,8 @@ public class GRCodedStreamReader
 		return false;
 	}
 
-	internal virtual void ResetPosition () {}
+	internal virtual void ResetPosition()
+	{ }
 
 	private bool TryReadUInt64(out ulong value)
 	{

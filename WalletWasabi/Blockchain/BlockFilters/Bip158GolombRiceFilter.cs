@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using NBitcoin;
-using NBitcoin.Crypto;
 using NBitcoin.Protocol;
 
 namespace WalletWasabi.Blockchain.BlockFilters;
